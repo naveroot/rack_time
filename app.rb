@@ -1,23 +1,16 @@
+require_relative 'time_format'
+
 class Application
-  AVAILABLE_TIME_FORMATS = %w[year month day hour minute second].freeze
-  TIME_HASH = {
-      year: 'year',
-      month: 'month',
-      day: 'day',
-      hour: 'hour',
-      minute: 'min',
-      second: 'sec'
-  }.freeze
 
   def call(env)
     request = Rack::Request.new(env)
     params = request.params
-    return [404, headers, ['Not found']] if valid_url?(request)
-    format_params = params['format'].split(',')
-    if formats_valid?(format_params)
-      [500, headers, [time_output(format_params)]]
+    return [404, headers, ['Not found']] unless valid_url?(request)
+    time = TimeFormat.new(params)
+    if time.format_valid?
+      return [200, headers, [time.output.join('-')]]
     else
-      [400, headers, ["Unknown time format [#{(format_params - AVAILABLE_TIME_FORMATS).join(',')}]"]]
+      return [400,headers,["Unknown time format [#{time.unexpected_params.join(',')}]"]]
     end
   end
 
@@ -36,18 +29,6 @@ class Application
   end
 
   def valid_url?(request)
-    request.params['format'].nil? || request.params['format'].empty? || request.path_info != '/time'
-  end
-
-  def formats_valid?(format_params)
-    (format_params - AVAILABLE_TIME_FORMATS).empty?
-  end
-
-  def time_output(format_params)
-    output = []
-    format_params.each do |param|
-      output << Time.now.send(TIME_HASH[param.to_sym])
-    end
-    p output.join('-')
+    request.path_info == '/time'
   end
 end

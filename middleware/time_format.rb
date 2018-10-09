@@ -17,7 +17,7 @@ class TimeFormat
     status, headers, body = @app.call(env)
     request = Rack::Request.new(env)
     params = request.params
-    return [404, headers, ['Not found']] if params['format'].nil? || params['format'].empty?
+    return [404, headers, ['Not found']] if valid_url?
     format_params = params['format'].split(',')
     if formats_valid?(format_params)
       [500, headers, [time_output(format_params)]]
@@ -27,6 +27,9 @@ class TimeFormat
   end
 
   private
+  def valid_url?
+    params['format'].nil? || params['format'].empty? || request.path_info != '/time'
+  end
 
   def formats_valid?(format_params)
     (format_params - AVAILABLE_TIME_FORMATS).empty?
